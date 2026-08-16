@@ -26,12 +26,14 @@ function renderExtension(extension) {
   card.append(meta);
 
   const actions = element("div", "extension-card__actions");
-  const download = element("a", "button button-primary", "Download bundle ↓");
+  const install = element("a", "button button-primary", "Review in Galileo →");
+  install.href = `servo:addons?catalog=${encodeURIComponent(extension.id)}`;
+  const download = element("a", "button", "Download bundle ↓");
   download.href = extension.download_url;
   download.setAttribute("download", "");
   const source = element("a", "button", "Review source ↗");
   source.href = extension.source_url;
-  actions.append(download, source);
+  actions.append(install, download, source);
   card.append(actions);
 
   const digest = element("p", "digest", `SHA-256 ${extension.package_sha256}`);

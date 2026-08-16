@@ -28,7 +28,8 @@ digests are calculated from the exact published bytes.
 ## Installing the preview blocker
 
 1. Open **Get Extensions** or **Manage Extensions** in Galileo.
-2. Choose **Review and install** for Galileo Tracker Shield.
+2. Choose **Review in Galileo** for Galileo Tracker Shield. The catalog returns
+   to `servo:addons` with that exact package selected.
 3. Galileo downloads each published JSON file from this fixed catalog and checks
    its exact SHA-256 digest before parsing it.
 4. Review the requested hosts and permissions, install it disabled, then complete

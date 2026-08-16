@@ -50,9 +50,18 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(html.count("<h1>"), 1)
         self.assertIn('href="#catalog"', html)
         self.assertIn('href="catalog.json"', html)
+        self.assertIn("Review in Galileo", html)
         self.assertIn("Automatic installation", html)
         self.assertIn("background scripts", html.lower())
         self.assertNotIn("fully compatible", html.lower())
+
+        catalog_js = (self.site / "catalog.js").read_text(encoding="utf-8")
+        self.assertIn("servo:addons?catalog=", catalog_js)
+        self.assertIn("encodeURIComponent(extension.id)", catalog_js)
+        self.assertLess(
+            catalog_js.index("Review in Galileo"),
+            catalog_js.index("Download bundle"),
+        )
 
     def test_catalog_archives_and_exact_digests(self) -> None:
         catalog = json.loads((self.site / "catalog.json").read_text(encoding="utf-8"))
