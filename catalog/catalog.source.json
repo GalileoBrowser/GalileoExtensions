@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "catalog_id": "galileo-official",
+  "browser": "Galileo Browser",
+  "catalog_status": "pre-alpha",
+  "extensions": [
+    {
+      "id": "galileo-tracker-shield",
+      "name": "Galileo Tracker Shield",
+      "version": "0.1.0",
+      "channel": "preview",
+      "summary": "A small, transparent static-rule starter list for common advertising and tracking hosts.",
+      "capability": "static-network-rules",
+      "source_directory": "extensions/galileo-tracker-shield",
+      "source_url": "https://github.com/GalileoBrowser/GalileoExtensions/tree/main/extensions/galileo-tracker-shield",
+      "install_mode": "manual-flat-bundle",
+      "compatibility": {
+        "minimum_browser_version": "0.4.0",
+        "supported": [
+          "Manifest V3 metadata",
+          "static declarativeNetRequest block rules",
+          "browser-owned toolbar summary"
+        ],
+        "not_supported": [
+          "background or service-worker scripts",
+          "content scripts",
+          "popup execution",
+          "dynamic or session rules",
+          "automatic updates"
+        ]
+      }
+    }
+  ]
+}

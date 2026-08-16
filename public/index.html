@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The official reviewed extension catalog for Galileo Browser.">
+  <meta name="theme-color" content="#f3f7f5">
+  <title>Extensions — Galileo Browser</title>
+  <link rel="icon" href="https://galileobrowser.com/assets/galileo-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="catalog.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#catalog">Skip to catalog</a>
+  <header class="site-header">
+    <a class="brand" href="https://galileobrowser.com/" aria-label="Galileo Browser home">
+      <img src="https://galileobrowser.com/assets/galileo-symbol.png" alt="" width="46" height="46">
+      <span><strong>Galileo</strong><small>Extensions</small></span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#catalog">Catalog</a>
+      <a href="#install">Install</a>
+      <a href="#trust">Trust</a>
+      <a href="https://github.com/GalileoBrowser/GalileoExtensions">Source ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Official Galileo catalog / pre-alpha</p>
+        <h1>Extensions with an honest compatibility boundary.</h1>
+        <p class="lede">Reviewed packages for the APIs Galileo implements today. Every listing exposes its source, permissions, exact package digest, and unsupported capabilities.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#catalog">Browse extensions <span aria-hidden="true">↓</span></a>
+          <a class="button" href="catalog.json">Machine-readable catalog <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+      <aside class="runtime-card" aria-label="Current extension runtime">
+        <span class="status-dot"></span>
+        <p>Runtime status</p>
+        <strong>Static network rules</strong>
+        <ul>
+          <li>Manifest V3 validation</li>
+          <li>Explicit host review</li>
+          <li>Private access off by default</li>
+          <li>No remote script execution</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="catalog-section" id="catalog" aria-labelledby="catalog-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Reviewed packages</p><h2 id="catalog-title">Available for testing</h2></div>
+        <p id="catalog-status" role="status">Loading the signed-byte catalog…</p>
+      </div>
+      <div class="catalog-grid" id="catalog-grid" aria-live="polite"></div>
+      <noscript><p class="notice">JavaScript is needed to render catalog metadata. The raw <a href="catalog.json">catalog.json</a> remains available.</p></noscript>
+    </section>
+
+    <section class="steps" id="install" aria-labelledby="install-title">
+      <div class="section-heading"><div><p class="eyebrow">Current installation flow</p><h2 id="install-title">Review first. Enable second.</h2></div></div>
+      <ol>
+        <li><span>01</span><div><strong>Download and extract</strong><p>Download the deterministic bundle and extract its flat JSON files.</p></div></li>
+        <li><span>02</span><div><strong>Open Manage Extensions</strong><p>Use Galileo's menu, then choose <em>Install local add-on</em>.</p></div></li>
+        <li><span>03</span><div><strong>Select both files</strong><p>Select <code>manifest.json</code> and <code>rules.json</code> together.</p></div></li>
+        <li><span>04</span><div><strong>Inspect and enable</strong><p>Review every host and permission. Private-window access remains a separate choice.</p></div></li>
+      </ol>
+      <p class="notice">One-click remote installation and automatic updates stay disabled until Galileo has signed packages, revocation, and a browser-owned trust pipeline.</p>
+    </section>
+
+    <section class="trust" id="trust" aria-labelledby="trust-title">
+      <div><p class="eyebrow">Trust boundary</p><h2 id="trust-title">A catalog is not a permission bypass.</h2></div>
+      <div class="trust-grid">
+        <article><strong>Auditable source</strong><p>Published source and deterministic archives are hashed from the exact bytes deployed here.</p></article>
+        <article><strong>Browser validation</strong><p>Galileo independently validates manifests, rules, resource limits, and accepted host authority.</p></article>
+        <article><strong>Deliberate limits</strong><p>Background scripts, content scripts, popup execution, and dynamic rules are labelled unavailable.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Galileo Extensions is maintained by the GalileoBrowser project.</p>
+    <p><a href="https://galileobrowser.com/">Browser website</a> · <a href="https://github.com/GalileoBrowser/GalileoEngine">Engine source</a> · <a href="https://github.com/GalileoBrowser/GalileoExtensions/issues">Report an issue</a></p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Galileo Tracker Shield",
+  "version": "0.1.0",
+  "description": "Preview static rules for common advertising and tracking hosts in Galileo Browser.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tracker-shield@extensions.galileobrowser.com"
+    }
+  },
+  "permissions": [
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://*.adnxs.com/*",
+    "*://*.adsrvr.org/*",
+    "*://*.doubleclick.net/*",
+    "*://*.googleadservices.com/*",
+    "*://*.googlesyndication.com/*",
+    "*://*.outbrain.com/*",
+    "*://*.scorecardresearch.com/*",
+    "*://*.taboola.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "tracker_shield_preview",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "action": {
+    "default_title": "Galileo Tracker Shield"
+  }
+}
