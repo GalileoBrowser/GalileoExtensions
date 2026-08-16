@@ -1,0 +1,18 @@
+/*
+ * Galileo Tracker Shield cosmetic baseline.
+ *
+ * Keep this list deliberately conservative: every selector identifies a
+ * vendor-specific advertising container. Generic class-name heuristics are
+ * excluded because they create unacceptable false positives.
+ */
+
+.adsbygoogle,
+[id^="google_ads_iframe"],
+[id^="div-gpt-ad"],
+iframe[src*="doubleclick.net"],
+iframe[src*="googlesyndication.com"],
+[id^="taboola-"],
+[id^="outbrain_widget_"],
+.OUTBRAIN {
+  display: none !important;
+}

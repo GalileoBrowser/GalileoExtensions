@@ -18,10 +18,17 @@ SOURCE_CATALOG = ROOT / "catalog" / "catalog.source.json"
 EXTENSION_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 VERSION = re.compile(r"^\d+(?:\.\d+){1,3}$")
 ZIP_TIMESTAMP = (2026, 1, 1, 0, 0, 0)
+MAX_CONTENT_SCRIPT_DESCRIPTORS = 64
+MAX_CONTENT_SCRIPT_PATTERNS = 256
+MAX_CONTENT_SCRIPT_FILES = 64
+MAX_CONTENT_STYLE_FILE_BYTES = 256 * 1024
+MAX_TOTAL_CONTENT_STYLE_BYTES = 1024 * 1024
 
 
 def canonical_json(value: object) -> bytes:
-    return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    return (
+        json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode()
 
 
 def sha256(data: bytes) -> str:
@@ -32,9 +39,126 @@ def load_json(path: Path) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def validate_match_pattern(extension_id: str, value: object, label: str) -> None:
+    if not isinstance(value, str) or not value or len(value.encode()) > 512:
+        raise ValueError(f"{extension_id}: {label} contains an invalid match pattern")
+    if value == "<all_urls>":
+        return
+    match = re.fullmatch(
+        r"(http|https|\*)://(\*|\*\.[A-Za-z0-9.-]+|[A-Za-z0-9.-]+)(/.*)", value
+    )
+    if match is None:
+        raise ValueError(
+            f"{extension_id}: {label} contains unsupported pattern {value!r}"
+        )
+    host = match.group(2).removeprefix("*.")
+    if host != "*" and any(
+        not part or len(part) > 63 or part.startswith("-") or part.endswith("-")
+        for part in host.split(".")
+    ):
+        raise ValueError(f"{extension_id}: {label} contains invalid host {host!r}")
+
+
+def validate_content_scripts(
+    extension_id: str, manifest: dict, directory: Path
+) -> tuple[list[str], int, int]:
+    descriptors = manifest.get("content_scripts", [])
+    if (
+        not isinstance(descriptors, list)
+        or len(descriptors) > MAX_CONTENT_SCRIPT_DESCRIPTORS
+    ):
+        raise ValueError(
+            f"{extension_id}: content_scripts exceeds the descriptor limit"
+        )
+
+    files: list[str] = []
+    seen_files: set[str] = set()
+    total_bytes = 0
+    allowed_keys = {"matches", "exclude_matches", "css", "all_frames", "run_at"}
+    for index, descriptor in enumerate(descriptors):
+        label = f"content_scripts[{index}]"
+        if not isinstance(descriptor, dict) or set(descriptor) - allowed_keys:
+            raise ValueError(f"{extension_id}: {label} has unsupported fields")
+        matches = descriptor.get("matches")
+        excludes = descriptor.get("exclude_matches", [])
+        css_files = descriptor.get("css")
+        if (
+            not isinstance(matches, list)
+            or not matches
+            or len(matches) > MAX_CONTENT_SCRIPT_PATTERNS
+        ):
+            raise ValueError(f"{extension_id}: {label}.matches is invalid")
+        if (
+            not isinstance(excludes, list)
+            or len(excludes) > MAX_CONTENT_SCRIPT_PATTERNS
+        ):
+            raise ValueError(f"{extension_id}: {label}.exclude_matches is invalid")
+        if len(set(matches)) != len(matches) or len(set(excludes)) != len(excludes):
+            raise ValueError(
+                f"{extension_id}: {label} contains duplicate match patterns"
+            )
+        for pattern in matches:
+            validate_match_pattern(extension_id, pattern, f"{label}.matches")
+        for pattern in excludes:
+            validate_match_pattern(extension_id, pattern, f"{label}.exclude_matches")
+        if (
+            not isinstance(css_files, list)
+            or not css_files
+            or len(css_files) > MAX_CONTENT_SCRIPT_FILES
+        ):
+            raise ValueError(f"{extension_id}: {label}.css is invalid")
+        if len(set(css_files)) != len(css_files):
+            raise ValueError(f"{extension_id}: {label}.css contains duplicates")
+        if not isinstance(descriptor.get("all_frames", False), bool):
+            raise ValueError(f"{extension_id}: {label}.all_frames must be boolean")
+        if descriptor.get("run_at", "document_idle") not in {
+            "document_start",
+            "document_end",
+            "document_idle",
+        }:
+            raise ValueError(f"{extension_id}: {label}.run_at is unsupported")
+
+        for relative in css_files:
+            if (
+                not isinstance(relative, str)
+                or Path(relative).name != relative
+                or not relative.endswith(".css")
+            ):
+                raise ValueError(
+                    f"{extension_id}: content CSS must be a flat .css file"
+                )
+            if relative in seen_files:
+                continue
+            seen_files.add(relative)
+            try:
+                data = (directory / relative).read_bytes()
+                source = data.decode("utf-8")
+            except (OSError, UnicodeDecodeError) as error:
+                raise ValueError(
+                    f"{extension_id}: {relative} is not readable UTF-8"
+                ) from error
+            if len(data) > MAX_CONTENT_STYLE_FILE_BYTES or b"\0" in data:
+                raise ValueError(
+                    f"{extension_id}: {relative} exceeds the content CSS limit"
+                )
+            if re.search(r"@import\b", source, re.IGNORECASE):
+                raise ValueError(
+                    f"{extension_id}: {relative} may not import remote styles"
+                )
+            total_bytes += len(data)
+            if total_bytes > MAX_TOTAL_CONTENT_STYLE_BYTES:
+                raise ValueError(
+                    f"{extension_id}: content CSS exceeds the aggregate limit"
+                )
+            files.append(relative)
+    return files, len(files), total_bytes
+
+
 def build_archive(output: Path, extension_dir: Path, files: list[str]) -> bytes:
     output.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+    with zipfile.ZipFile(
+        output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+    ) as archive:
         for relative in files:
             data = (extension_dir / relative).read_bytes()
             info = zipfile.ZipInfo(relative, ZIP_TIMESTAMP)
@@ -44,7 +168,11 @@ def build_archive(output: Path, extension_dir: Path, files: list[str]) -> bytes:
     return output.read_bytes()
 
 
-def validate_manifest(extension_id: str, version: str, directory: Path) -> tuple[dict, list[str], int]:
+def validate_manifest(
+    extension_id: str,
+    version: str,
+    directory: Path,
+) -> tuple[dict, list[str], int, int, int]:
     manifest = load_json(directory / "manifest.json")
     if not isinstance(manifest, dict) or manifest.get("manifest_version") != 3:
         raise ValueError(f"{extension_id}: only Manifest V3 is publishable")
@@ -60,9 +188,15 @@ def validate_manifest(extension_id: str, version: str, directory: Path) -> tuple
     rule_ids: set[int] = set()
     for descriptor in resources:
         if not isinstance(descriptor, dict) or descriptor.get("enabled") is not True:
-            raise ValueError(f"{extension_id}: every published rule resource must be enabled")
+            raise ValueError(
+                f"{extension_id}: every published rule resource must be enabled"
+            )
         path = descriptor.get("path")
-        if not isinstance(path, str) or Path(path).name != path or not path.endswith(".json"):
+        if (
+            not isinstance(path, str)
+            or Path(path).name != path
+            or not path.endswith(".json")
+        ):
             raise ValueError(f"{extension_id}: rule resources must be flat JSON files")
         rules = load_json(directory / path)
         if not isinstance(rules, list):
@@ -74,10 +208,23 @@ def validate_manifest(extension_id: str, version: str, directory: Path) -> tuple
                 raise ValueError(f"{extension_id}: duplicate rule id {rule['id']}")
             rule_ids.add(rule["id"])
             if rule.get("action") != {"type": "block"}:
-                raise ValueError(f"{extension_id}: preview catalog accepts block actions only")
+                raise ValueError(
+                    f"{extension_id}: preview catalog accepts block actions only"
+                )
         rule_count += len(rules)
         files.append(path)
-    return manifest, files, rule_count
+    content_files, content_style_count, content_style_bytes = validate_content_scripts(
+        extension_id,
+        manifest,
+        directory,
+    )
+    for path in content_files:
+        if path in files:
+            raise ValueError(
+                f"{extension_id}: package resource {path} is referenced twice"
+            )
+        files.append(path)
+    return manifest, files, rule_count, content_style_count, content_style_bytes
 
 
 def build(output: Path) -> None:
@@ -102,7 +249,9 @@ def build(output: Path) -> None:
             raise ValueError("catalog entries must be objects")
         extension_id = entry.get("id")
         version = entry.get("version")
-        if not isinstance(extension_id, str) or not EXTENSION_ID.fullmatch(extension_id):
+        if not isinstance(extension_id, str) or not EXTENSION_ID.fullmatch(
+            extension_id
+        ):
             raise ValueError("catalog extension id is invalid")
         if extension_id in seen:
             raise ValueError(f"duplicate catalog extension id: {extension_id}")
@@ -112,9 +261,17 @@ def build(output: Path) -> None:
         relative_source = entry.get("source_directory")
         expected_source = f"extensions/{extension_id}"
         if relative_source != expected_source:
-            raise ValueError(f"{extension_id}: source_directory must be {expected_source}")
+            raise ValueError(
+                f"{extension_id}: source_directory must be {expected_source}"
+            )
         extension_dir = ROOT / expected_source
-        _, files, rule_count = validate_manifest(extension_id, version, extension_dir)
+        _, files, rule_count, content_style_count, content_style_bytes = (
+            validate_manifest(
+                extension_id,
+                version,
+                extension_dir,
+            )
+        )
 
         source_output = output / "source" / extension_id
         source_output.mkdir()
@@ -134,6 +291,8 @@ def build(output: Path) -> None:
         public_entry.update(
             {
                 "rule_count": rule_count,
+                "content_style_count": content_style_count,
+                "content_style_bytes": content_style_bytes,
                 "download_url": f"downloads/{archive_name}",
                 "package_bytes": len(archive_bytes),
                 "package_sha256": sha256(archive_bytes),

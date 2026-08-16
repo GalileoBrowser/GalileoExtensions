@@ -14,5 +14,7 @@ Until the signed-package pipeline exists, the catalog must not claim:
 - one-click installation;
 - automatic updates;
 - Chrome Web Store or Firefox Add-ons compatibility;
-- execution of background scripts, content scripts, or extension popups; or
+- execution of background scripts, JavaScript content scripts, or extension
+  popups (reviewed content CSS is browser-parsed and contains no executable
+  code); or
 - that a preview privacy list blocks every advertisement or tracker.

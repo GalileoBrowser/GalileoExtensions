@@ -7,12 +7,13 @@ This repository is the source of the official, reviewed extension catalog for
 - Machine-readable index: <https://extensions.galileobrowser.com/catalog.json>
 - Browser engine: <https://github.com/GalileoBrowser/GalileoEngine>
 
-Galileo's current extension runtime is intentionally narrow. It can install
-reviewed Manifest V3 packages containing static `declarativeNetRequest` rules
-and can expose browser-owned toolbar metadata. Background scripts, content
-scripts, popup execution, dynamic rules, and broad Chrome/Firefox extension API
-compatibility are not yet available. The catalog labels that boundary instead
-of presenting unsupported packages as installable.
+Galileo's current extension runtime is intentionally bounded. It can install
+reviewed Manifest V3 packages containing static `declarativeNetRequest` rules,
+browser-parsed `content_scripts.css`, and browser-owned toolbar metadata.
+JavaScript content scripts, background scripts, popup execution, dynamic rules,
+and broad Chrome/Firefox extension API compatibility are not yet available. The
+catalog labels that boundary instead of presenting unsupported packages as
+installable.
 
 ## Local build
 
@@ -30,8 +31,8 @@ digests are calculated from the exact published bytes.
 1. Open **Get Extensions** or **Manage Extensions** in Galileo.
 2. Choose **Review in Galileo** for Galileo Tracker Shield. The catalog returns
    to `servo:addons` with that exact package selected.
-3. Galileo downloads each published JSON file from this fixed catalog and checks
-   its exact SHA-256 digest before parsing it.
+3. Galileo downloads each published JSON or CSS file from this fixed catalog
+   and checks its exact SHA-256 digest before parsing it.
 4. Review the requested hosts and permissions, install it disabled, then complete
    the separate enable review.
 

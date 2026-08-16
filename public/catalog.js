@@ -22,6 +22,9 @@ function renderExtension(extension) {
   const meta = element("div", "extension-meta");
   meta.append(element("span", "", `v${extension.version}`));
   meta.append(element("span", "", `${extension.rule_count} rules`));
+  if (extension.content_style_count) {
+    meta.append(element("span", "", `${extension.content_style_count} cosmetic stylesheet${extension.content_style_count === 1 ? "" : "s"}`));
+  }
   meta.append(element("span", "", extension.capability.replaceAll("-", " ")));
   card.append(meta);
 

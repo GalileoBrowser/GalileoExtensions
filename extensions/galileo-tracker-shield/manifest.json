@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Galileo Tracker Shield",
-  "version": "0.1.0",
-  "description": "Preview static rules for common advertising and tracking hosts in Galileo Browser.",
+  "version": "0.2.0",
+  "description": "Reviewed network blocking and cosmetic filtering for common advertising and tracking surfaces in Galileo Browser.",
   "browser_specific_settings": {
     "gecko": {
       "id": "tracker-shield@extensions.galileobrowser.com"
@@ -30,6 +30,18 @@
       }
     ]
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "all_frames": true,
+      "run_at": "document_start"
+    }
+  ],
   "action": {
     "default_title": "Galileo Tracker Shield"
   }
