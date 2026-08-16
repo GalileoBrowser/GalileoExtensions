@@ -119,10 +119,12 @@ def build(output: Path) -> None:
         source_output = output / "source" / extension_id
         source_output.mkdir()
         file_digests: dict[str, str] = {}
+        source_files: dict[str, str] = {}
         for relative in files:
             data = (extension_dir / relative).read_bytes()
             (source_output / relative).write_bytes(data)
             file_digests[relative] = sha256(data)
+            source_files[relative] = f"source/{extension_id}/{relative}"
 
         archive_name = f"{extension_id}-{version}.zip"
         archive_path = output / "downloads" / archive_name
@@ -136,6 +138,7 @@ def build(output: Path) -> None:
                 "package_bytes": len(archive_bytes),
                 "package_sha256": sha256(archive_bytes),
                 "files": file_digests,
+                "source_files": source_files,
             }
         )
         published.append(public_entry)

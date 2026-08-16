@@ -41,9 +41,9 @@ class CatalogTests(unittest.TestCase):
             temporary.cleanup()
 
     def test_required_site_files_exist(self) -> None:
-        for relative in ["index.html", "styles.css", "catalog.js", "catalog.json", "CNAME", ".nojekyll"]:
+        for relative in ["index.html", "styles.css", "catalog.js", "catalog.json", ".nojekyll"]:
             self.assertTrue((self.site / relative).is_file(), relative)
-        self.assertEqual((self.site / "CNAME").read_text().strip(), "extensions.galileobrowser.com")
+        self.assertFalse((self.site / "CNAME").exists())
 
     def test_public_page_has_accessible_contract_and_honest_boundaries(self) -> None:
         html = (self.site / "index.html").read_text(encoding="utf-8")
@@ -66,10 +66,14 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(data).hexdigest(), extension["package_sha256"])
             self.assertEqual(len(data), extension["package_bytes"])
             self.assertGreater(extension["rule_count"], 0)
+            self.assertEqual(set(extension["source_files"]), set(extension["files"]))
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertEqual(sorted(archive.namelist()), sorted(extension["files"]))
                 for name, digest in extension["files"].items():
                     self.assertEqual(hashlib.sha256(archive.read(name)).hexdigest(), digest)
+                    source_path = self.site / extension["source_files"][name]
+                    self.assertTrue(source_path.is_file())
+                    self.assertEqual(hashlib.sha256(source_path.read_bytes()).hexdigest(), digest)
 
     def test_preview_package_matches_galileo_static_runtime(self) -> None:
         manifest = json.loads((ROOT / "extensions/galileo-tracker-shield/manifest.json").read_text())
