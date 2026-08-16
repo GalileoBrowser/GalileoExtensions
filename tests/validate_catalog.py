@@ -50,7 +50,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(html.count("<h1>"), 1)
         self.assertIn('href="#catalog"', html)
         self.assertIn('href="catalog.json"', html)
-        self.assertIn("One-click remote installation", html)
+        self.assertIn("Automatic installation", html)
         self.assertIn("background scripts", html.lower())
         self.assertNotIn("fully compatible", html.lower())
 
@@ -66,6 +66,7 @@ class CatalogTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(data).hexdigest(), extension["package_sha256"])
             self.assertEqual(len(data), extension["package_bytes"])
             self.assertGreater(extension["rule_count"], 0)
+            self.assertEqual(extension["install_mode"], "review-first-browser")
             self.assertEqual(set(extension["source_files"]), set(extension["files"]))
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertEqual(sorted(archive.namelist()), sorted(extension["files"]))

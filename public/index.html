@@ -62,14 +62,14 @@
     </section>
 
     <section class="steps" id="install" aria-labelledby="install-title">
-      <div class="section-heading"><div><p class="eyebrow">Current installation flow</p><h2 id="install-title">Review first. Enable second.</h2></div></div>
+      <div class="section-heading"><div><p class="eyebrow">Current installation flow</p><h2 id="install-title">Verify. Review. Enable.</h2></div></div>
       <ol>
-        <li><span>01</span><div><strong>Download and extract</strong><p>Download the deterministic bundle and extract its flat JSON files.</p></div></li>
-        <li><span>02</span><div><strong>Open Manage Extensions</strong><p>Use Galileo's menu, then choose <em>Install local add-on</em>.</p></div></li>
-        <li><span>03</span><div><strong>Select both files</strong><p>Select <code>manifest.json</code> and <code>rules.json</code> together.</p></div></li>
-        <li><span>04</span><div><strong>Inspect and enable</strong><p>Review every host and permission. Private-window access remains a separate choice.</p></div></li>
+        <li><span>01</span><div><strong>Open Get Extensions</strong><p>Use Galileo's application menu to open the official catalog.</p></div></li>
+        <li><span>02</span><div><strong>Verify exact files</strong><p>Galileo downloads only the advertised flat JSON files and checks every SHA-256 digest.</p></div></li>
+        <li><span>03</span><div><strong>Review the package</strong><p>Inspect its identity, hosts, permissions, and static rules before installing it disabled.</p></div></li>
+        <li><span>04</span><div><strong>Enable explicitly</strong><p>Complete a second permission review. Private-window access remains a separate choice.</p></div></li>
       </ol>
-      <p class="notice">One-click remote installation and automatic updates stay disabled until Galileo has signed packages, revocation, and a browser-owned trust pipeline.</p>
+      <p class="notice">Automatic installation and unattended updates stay disabled until Galileo has signed packages, revocation, and a browser-owned update pipeline. Older builds can still use the downloadable flat bundle.</p>
     </section>
 
     <section class="trust" id="trust" aria-labelledby="trust-title">
