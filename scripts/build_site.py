@@ -23,6 +23,9 @@ MAX_CONTENT_SCRIPT_PATTERNS = 256
 MAX_CONTENT_SCRIPT_FILES = 64
 MAX_CONTENT_STYLE_FILE_BYTES = 256 * 1024
 MAX_TOTAL_CONTENT_STYLE_BYTES = 1024 * 1024
+MAX_RUNTIME_PACKAGE_FILES = 4096
+MAX_RUNTIME_PACKAGE_FILE_BYTES = 4 * 1024 * 1024
+MAX_RUNTIME_PACKAGE_BYTES = 32 * 1024 * 1024
 
 
 def canonical_json(value: object) -> bytes:
@@ -154,6 +157,111 @@ def validate_content_scripts(
     return files, len(files), total_bytes
 
 
+def normalize_runtime_path(extension_id: str, value: object, label: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{extension_id}: {label} must be a string path")
+    path = value.removeprefix("/")
+    if (
+        not path
+        or len(path.encode()) > 512
+        or "\\" in path
+        or any(part in {"", ".", ".."} for part in path.split("/"))
+        or any(ord(character) < 0x20 or ord(character) == 0x7f for character in path)
+    ):
+        raise ValueError(f"{extension_id}: {label} is not a safe package path")
+    return path
+
+
+def validate_runtime_package(
+    extension_id: str,
+    version: str,
+    directory: Path,
+) -> tuple[dict, list[str], int, int, int]:
+    """Validate a reviewed executable package without pretending it is static-only.
+
+    Runtime packages still go through the browser's full manifest/resource
+    validator at install time.  The catalog builder only performs the
+    bounded, deterministic checks needed to publish exact source-file
+    evidence; it deliberately does not reimplement the engine's WebExtension
+    parser here.
+    """
+    manifest = load_json(directory / "manifest.json")
+    if not isinstance(manifest, dict) or manifest.get("manifest_version") not in {2, 3}:
+        raise ValueError(f"{extension_id}: runtime packages require Manifest V2 or V3")
+    if manifest.get("version") != version:
+        raise ValueError(f"{extension_id}: catalog and manifest versions differ")
+    if not isinstance(manifest.get("name"), str) or not manifest["name"].strip():
+        raise ValueError(f"{extension_id}: runtime manifest name is required")
+
+    # The current catalog transport keeps executable CSS out of the runtime
+    # capability until the browser can report content-style inventory without
+    # confusing package CSS assets with content_scripts.css.  uBlock Origin's
+    # reviewed package uses JavaScript content scripts, so this is explicit
+    # rather than a silent downgrade.
+    for index, descriptor in enumerate(manifest.get("content_scripts", [])):
+        if not isinstance(descriptor, dict):
+            raise ValueError(f"{extension_id}: content_scripts[{index}] is invalid")
+        if descriptor.get("css"):
+            raise ValueError(
+                f"{extension_id}: runtime catalog packages may not declare content_scripts.css yet"
+            )
+
+    files: list[str] = []
+    total_bytes = 0
+    for path in sorted(directory.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            if path.is_symlink():
+                raise ValueError(f"{extension_id}: runtime package may not contain symlinks")
+            continue
+        relative = normalize_runtime_path(
+            extension_id,
+            path.relative_to(directory).as_posix(),
+            "runtime package file",
+        )
+        data = path.read_bytes()
+        if not data or len(data) > MAX_RUNTIME_PACKAGE_FILE_BYTES:
+            raise ValueError(
+                f"{extension_id}: {relative} exceeds the runtime package file limit"
+            )
+        total_bytes += len(data)
+        if total_bytes > MAX_RUNTIME_PACKAGE_BYTES:
+            raise ValueError(
+                f"{extension_id}: runtime package exceeds the aggregate byte limit"
+            )
+        if path.suffix.lower() in {".css", ".html", ".htm", ".js", ".mjs", ".json"}:
+            try:
+                data.decode("utf-8")
+            except UnicodeDecodeError as error:
+                raise ValueError(f"{extension_id}: {relative} is not UTF-8") from error
+        files.append(relative)
+    if "manifest.json" not in files:
+        raise ValueError(f"{extension_id}: runtime package manifest.json is missing")
+    if len(files) > MAX_RUNTIME_PACKAGE_FILES:
+        raise ValueError(f"{extension_id}: runtime package contains too many files")
+
+    # A runtime catalog entry must actually contain an executable surface.  A
+    # package with only icons/data would otherwise be labelled executable while
+    # never starting a background, content, popup, options, or similar host.
+    executable_keys = {
+        "background",
+        "browser_action",
+        "page_action",
+        "action",
+        "content_scripts",
+        "options_page",
+        "options_ui",
+        "devtools_page",
+        "side_panel",
+        "sidebar_action",
+        "offscreen",
+        "chrome_url_overrides",
+        "sandbox",
+    }
+    if not any(manifest.get(key) for key in executable_keys):
+        raise ValueError(f"{extension_id}: runtime package has no executable entrypoint")
+    return manifest, sorted(files), 0, 0, 0
+
+
 def build_archive(output: Path, extension_dir: Path, files: list[str]) -> bytes:
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(
@@ -172,8 +280,11 @@ def validate_manifest(
     extension_id: str,
     version: str,
     directory: Path,
+    capability: str | None = None,
 ) -> tuple[dict, list[str], int, int, int]:
     manifest = load_json(directory / "manifest.json")
+    if capability == "runtime-package":
+        return validate_runtime_package(extension_id, version, directory)
     if not isinstance(manifest, dict) or manifest.get("manifest_version") != 3:
         raise ValueError(f"{extension_id}: only Manifest V3 is publishable")
     if manifest.get("version") != version:
@@ -270,6 +381,7 @@ def build(output: Path) -> None:
                 extension_id,
                 version,
                 extension_dir,
+                entry.get("capability"),
             )
         )
 
@@ -279,7 +391,9 @@ def build(output: Path) -> None:
         source_files: dict[str, str] = {}
         for relative in files:
             data = (extension_dir / relative).read_bytes()
-            (source_output / relative).write_bytes(data)
+            output_path = source_output / relative
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_bytes(data)
             file_digests[relative] = sha256(data)
             source_files[relative] = f"source/{extension_id}/{relative}"
 

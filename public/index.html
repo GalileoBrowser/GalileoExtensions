@@ -42,11 +42,11 @@
       <aside class="runtime-card" aria-label="Current extension runtime">
         <span class="status-dot"></span>
         <p>Runtime status</p>
-        <strong>Network rules + content CSS</strong>
+        <strong>Reviewed rules + runtime packages</strong>
         <ul>
-          <li>Manifest V3 validation</li>
+          <li>Manifest V2/V3 validation</li>
           <li>Explicit host review</li>
-          <li>Browser-parsed cosmetic styles</li>
+          <li>Executable resources stay disabled by default</li>
           <li>Private access off by default</li>
           <li>No remote script execution</li>
         </ul>
@@ -66,8 +66,8 @@
       <div class="section-heading"><div><p class="eyebrow">Current installation flow</p><h2 id="install-title">Verify. Review. Enable.</h2></div></div>
       <ol>
         <li><span>01</span><div><strong>Open Get Extensions</strong><p>Use Galileo's application menu to open the official catalog.</p></div></li>
-        <li><span>02</span><div><strong>Verify exact files</strong><p>Galileo downloads only the advertised flat JSON and CSS files and checks every SHA-256 digest.</p></div></li>
-        <li><span>03</span><div><strong>Review the package</strong><p>Inspect its identity, hosts, permissions, static rules, and content-style scope before installing it disabled.</p></div></li>
+        <li><span>02</span><div><strong>Verify exact files</strong><p>Galileo downloads only the advertised package files and checks every SHA-256 digest.</p></div></li>
+        <li><span>03</span><div><strong>Review the package</strong><p>Inspect its identity, hosts, permissions, executable entry points, and static rules before installing it disabled.</p></div></li>
         <li><span>04</span><div><strong>Enable explicitly</strong><p>Complete a second permission review. Private-window access remains a separate choice.</p></div></li>
       </ol>
       <p class="notice">Choose <strong>Review in Galileo</strong> to return to the browser-owned verifier. Automatic installation and unattended updates stay disabled until Galileo has signed packages, revocation, and a browser-owned update pipeline. Other browsers and older Galileo builds can still use the downloadable flat bundle.</p>
@@ -78,7 +78,7 @@
       <div class="trust-grid">
         <article><strong>Auditable source</strong><p>Published source and deterministic archives are hashed from the exact bytes deployed here.</p></article>
         <article><strong>Browser validation</strong><p>Galileo independently validates manifests, rules, resource limits, and accepted host authority.</p></article>
-        <article><strong>Deliberate limits</strong><p>Background scripts, JavaScript content scripts, popup execution, and dynamic rules are labelled unavailable.</p></article>
+        <article><strong>Deliberate limits</strong><p>Runtime packages are executable but remain disabled until review; popup, isolated-DOM, streaming-filter, and update gaps are labelled per package.</p></article>
       </div>
     </section>
   </main>

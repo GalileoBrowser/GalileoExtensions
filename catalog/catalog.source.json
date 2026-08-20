@@ -30,6 +30,32 @@
           "automatic updates"
         ]
       }
+    },
+    {
+      "id": "ublock-origin",
+      "name": "uBlock Origin",
+      "version": "1.73.0",
+      "channel": "preview",
+      "summary": "A reviewed uBlock Origin runtime package. Galileo keeps it disabled until you inspect and explicitly enable its permissions.",
+      "capability": "runtime-package",
+      "source_directory": "extensions/ublock-origin",
+      "source_url": "https://github.com/GalileoBrowser/GalileoExtensions/tree/main/extensions/ublock-origin",
+      "install_mode": "review-first-browser",
+      "compatibility": {
+        "minimum_browser_version": "0.4.0",
+        "supported": [
+          "Manifest V2 background page and browser-action metadata",
+          "JavaScript content-script registration",
+          "reviewed package resources and locale catalogs",
+          "Galileo's browser-owned webRequest, tabs, storage, alarms, contextMenus, and webNavigation surfaces"
+        ],
+        "not_supported": [
+          "uBlock's full isolated-DOM and popup-to-page mediation contract",
+          "filterResponseData streaming parity",
+          "automatic updates or unattended installation",
+          "a claim of Chrome/Firefox extension parity"
+        ]
+      }
     }
   ]
 }

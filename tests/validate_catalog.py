@@ -74,7 +74,7 @@ class CatalogTests(unittest.TestCase):
         self.assertIn('href="catalog.json"', html)
         self.assertIn("Review in Galileo", html)
         self.assertIn("Automatic installation", html)
-        self.assertIn("background scripts", html.lower())
+        self.assertIn("runtime packages", html.lower())
         self.assertNotIn("fully compatible", html.lower())
 
         catalog_js = (self.site / "catalog.js").read_text(encoding="utf-8")
@@ -102,9 +102,15 @@ class CatalogTests(unittest.TestCase):
                 hashlib.sha256(data).hexdigest(), extension["package_sha256"]
             )
             self.assertEqual(len(data), extension["package_bytes"])
-            self.assertGreater(extension["rule_count"], 0)
-            self.assertGreater(extension["content_style_count"], 0)
-            self.assertGreater(extension["content_style_bytes"], 0)
+            if extension["capability"] == "runtime-package":
+                self.assertEqual(extension["rule_count"], 0)
+                self.assertEqual(extension["content_style_count"], 0)
+                self.assertEqual(extension["content_style_bytes"], 0)
+                self.assertGreater(len(extension["files"]), 64)
+            else:
+                self.assertGreater(extension["rule_count"], 0)
+                self.assertGreater(extension["content_style_count"], 0)
+                self.assertGreater(extension["content_style_bytes"], 0)
             self.assertEqual(extension["install_mode"], "review-first-browser")
             self.assertEqual(set(extension["source_files"]), set(extension["files"]))
             with zipfile.ZipFile(archive_path) as archive:
@@ -118,6 +124,26 @@ class CatalogTests(unittest.TestCase):
                     self.assertEqual(
                         hashlib.sha256(source_path.read_bytes()).hexdigest(), digest
                     )
+
+    def test_ublock_runtime_package_is_explicitly_reviewed(self) -> None:
+        catalog = json.loads((self.site / "catalog.json").read_text(encoding="utf-8"))
+        entry = next(item for item in catalog["extensions"] if item["id"] == "ublock-origin")
+        self.assertEqual(entry["capability"], "runtime-package")
+        self.assertEqual(entry["install_mode"], "review-first-browser")
+        self.assertIn("full isolated-DOM", " ".join(entry["compatibility"]["not_supported"]))
+        manifest_path = self.site / entry["source_files"]["manifest.json"]
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["manifest_version"], 2)
+        self.assertEqual(manifest["name"], "uBlock Origin")
+        self.assertEqual(manifest["background"]["page"], "background.html")
+        self.assertEqual(manifest["content_scripts"][0]["js"], [
+            "/js/vapi.js",
+            "/js/vapi-client.js",
+            "/js/contentscript.js",
+        ])
+        self.assertFalse(any(descriptor.get("css") for descriptor in manifest["content_scripts"]))
+        self.assertIn("js/contentscript.js", entry["files"])
+        self.assertIn("background.html", entry["files"])
 
     def test_preview_package_matches_galileo_static_runtime(self) -> None:
         manifest = json.loads(
