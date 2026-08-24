@@ -16,6 +16,11 @@ remain disabled until permission review and explicit enablement, and the
 catalog labels missing Chrome/Firefox behaviours instead of presenting
 unsupported APIs as complete.
 
+The catalog also includes Galileo Haptic Feedback, a small Android-only
+Manifest V3 package. It uses the standard `navigator.vibrate()` API for
+bounded link/control and deliberate-scroll cues, stores only local preferences,
+and safely becomes a no-op on desktop or on devices without vibration support.
+
 ## Local build
 
 ```bash
@@ -30,7 +35,8 @@ digests are calculated from the exact published bytes.
 ## Installing a reviewed package
 
 1. Open **Get Extensions** or **Manage Extensions** in Galileo.
-2. Choose **Review in Galileo** for Galileo Tracker Shield or uBlock Origin.
+2. Choose **Review in Galileo** for Galileo Tracker Shield, Galileo Haptic
+   Feedback, or uBlock Origin.
    The catalog returns to `servo:addons` with that exact package selected.
 3. Galileo downloads each published package file from this fixed catalog and
    checks its exact SHA-256 digest before parsing it.

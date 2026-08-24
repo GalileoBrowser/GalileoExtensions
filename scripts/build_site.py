@@ -26,6 +26,7 @@ MAX_TOTAL_CONTENT_STYLE_BYTES = 1024 * 1024
 MAX_RUNTIME_PACKAGE_FILES = 4096
 MAX_RUNTIME_PACKAGE_FILE_BYTES = 4 * 1024 * 1024
 MAX_RUNTIME_PACKAGE_BYTES = 32 * 1024 * 1024
+KNOWN_CATALOG_PLATFORMS = {"android", "desktop", "ios", "linux", "macos", "windows"}
 
 
 def canonical_json(value: object) -> bytes:
@@ -375,8 +376,21 @@ def build(output: Path) -> None:
             raise ValueError(
                 f"{extension_id}: source_directory must be {expected_source}"
             )
+        platforms = entry.get("platforms")
+        if platforms is not None:
+            if (
+                not isinstance(platforms, list)
+                or not platforms
+                or any(
+                    not isinstance(platform, str)
+                    or platform not in KNOWN_CATALOG_PLATFORMS
+                    for platform in platforms
+                )
+                or len(set(platforms)) != len(platforms)
+            ):
+                raise ValueError(f"{extension_id}: platforms must be unique known names")
         extension_dir = ROOT / expected_source
-        _, files, rule_count, content_style_count, content_style_bytes = (
+        manifest, files, rule_count, content_style_count, content_style_bytes = (
             validate_manifest(
                 extension_id,
                 version,
@@ -384,6 +398,10 @@ def build(output: Path) -> None:
                 entry.get("capability"),
             )
         )
+        if platforms is not None and manifest.get("galileo_platforms") != platforms:
+            raise ValueError(
+                f"{extension_id}: catalog and manifest platform declarations differ"
+            )
 
         source_output = output / "source" / extension_id
         source_output.mkdir()

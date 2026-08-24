@@ -106,7 +106,10 @@ class CatalogTests(unittest.TestCase):
                 self.assertEqual(extension["rule_count"], 0)
                 self.assertEqual(extension["content_style_count"], 0)
                 self.assertEqual(extension["content_style_bytes"], 0)
-                self.assertGreater(len(extension["files"]), 64)
+                if extension["id"] == "ublock-origin":
+                    self.assertGreater(len(extension["files"]), 64)
+                else:
+                    self.assertGreater(len(extension["files"]), 0)
             else:
                 self.assertGreater(extension["rule_count"], 0)
                 self.assertGreater(extension["content_style_count"], 0)
@@ -144,6 +147,26 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(any(descriptor.get("css") for descriptor in manifest["content_scripts"]))
         self.assertIn("js/contentscript.js", entry["files"])
         self.assertIn("background.html", entry["files"])
+
+    def test_haptic_package_is_android_only_and_self_gated(self) -> None:
+        catalog = json.loads((self.site / "catalog.json").read_text(encoding="utf-8"))
+        entry = next(
+            item for item in catalog["extensions"] if item["id"] == "galileo-haptic-feedback"
+        )
+        self.assertEqual(entry["capability"], "runtime-package")
+        self.assertEqual(entry["platforms"], ["android"])
+        self.assertEqual(entry["install_mode"], "review-first-browser")
+        manifest_path = self.site / entry["source_files"]["manifest.json"]
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["manifest_version"], 3)
+        self.assertEqual(manifest["permissions"], ["storage"])
+        self.assertEqual(manifest["galileo_platforms"], ["android"])
+        self.assertEqual(manifest["content_scripts"][0]["js"], ["content.js"])
+        self.assertIn("options.html", entry["files"])
+        content = (self.site / entry["source_files"]["content.js"]).read_text()
+        self.assertIn("navigator.vibrate", content)
+        self.assertIn("isAndroid", content)
+        self.assertIn("scrollThreshold", content)
 
     def test_preview_package_matches_galileo_static_runtime(self) -> None:
         manifest = json.loads(

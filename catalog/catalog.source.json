@@ -32,6 +32,37 @@
       }
     },
     {
+      "id": "galileo-haptic-feedback",
+      "name": "Galileo Haptic Feedback",
+      "version": "0.1.0",
+      "channel": "preview",
+      "summary": "Subtle, bounded Android vibration cues for link presses and deliberate scrolling.",
+      "capability": "runtime-package",
+      "platforms": [
+        "android"
+      ],
+      "source_directory": "extensions/galileo-haptic-feedback",
+      "source_url": "https://github.com/GalileoBrowser/GalileoExtensions/tree/main/extensions/galileo-haptic-feedback",
+      "install_mode": "review-first-browser",
+      "compatibility": {
+        "minimum_browser_version": "0.4.0",
+        "platforms": [
+          "Android only"
+        ],
+        "supported": [
+          "Manifest V3 JavaScript content scripts",
+          "local extension storage",
+          "navigator.vibrate() feature detection",
+          "delegated link, control, and scroll gestures"
+        ],
+        "not_supported": [
+          "desktop installation or desktop haptic emulation",
+          "vendor-specific Android haptic patterns",
+          "devices or browser builds without navigator.vibrate()"
+        ]
+      }
+    },
+    {
       "id": "ublock-origin",
       "name": "uBlock Origin",
       "version": "1.73.0",
